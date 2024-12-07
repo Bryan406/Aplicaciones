@@ -16,6 +16,8 @@ Este proyecto contiene un sistema experto en Prolog que permite diagnosticar enf
     5. [Realizar consultas](#realizar-consultas)
 
 ---
+
+## Requisitos Previos
 1. **Git**:
    - Descarga e instala Git desde [https://git-scm.com/](https://git-scm.com/).
    
