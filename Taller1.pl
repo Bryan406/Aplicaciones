@@ -62,7 +62,7 @@ cantSint(E, C):- findall(X, sintomade(X, E), L), length(L, C).
 
 diagnostico(Sintomas, E, Prob):- buscar(Sintomas, E, P), cantSint(E, Total), Prob is (P * 100) / Total.
 
-% 5. Sugerir enfermedad más probable según los síntomas
+% 5. Sugerir enfermedad mas probable según los síntomas
 mejor_diagnostico(Sintomas, MejorE):- 
     findall((Prob, E), (enfermedad(E), diagnostico(Sintomas, E, Prob)), Resultados),
     sort(Resultados, Sorted),
@@ -99,11 +99,11 @@ mejor_diagnostico(Sintomas, MejorE):-
 %    ?- sintomade(perdidaapetito, X).
 % 15. ¿Qué medicinas se relacionan con el síntoma cansancio?
 %    ?- recetade(M, cansancio).
-% 16. ¿Cuál es la enfermedad más probable si tengo fiebre y erupciones?
+% 16. ¿Cuál es la enfermedad mas probable si tengo fiebre y erupciones?
 %    ?- mejor_diagnostico([fiebre, erupciones], MejorE).
 % 17. ¿Cuántos síntomas tiene la gripe?
 %    ?- cantSint(gripe, C).
-% 18. ¿Qué enfermedades trata el médico general?
+% 18. ¿Qué enfermedades trata el medico general?
 %    ?- especialistade(medicinageneral, X).
 % 19. ¿Qué medicamento trata la malaria?
 %    ?- medicinade(X, malaria).
