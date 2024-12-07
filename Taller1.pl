@@ -6,106 +6,143 @@ enfermedad(hepatitis).
 enfermedad(tuberculosis).
 enfermedad(anemia).
 
-% Síntomas según enfermedad
+% Sintomas segun enfermedad
+sintomade(diarrea, gripe).
 sintomade(tos, gripe).
-sintomade(cansancio, gripe).
 sintomade(fiebre, gripe).
-sintomade(dolorcabeza, gripe).
+sintomade(dolordecabeza, gripe).
+
 sintomade(fiebre, rubeola).
-sintomade(erupciones, rubeola).
-sintomade(dolorarticulaciones, rubeola).
+sintomade(dolordecuerpo, rubeola).
+sintomade(nauseas, rubeola).
+
 sintomade(fiebre, malaria).
 sintomade(escalofrios, malaria).
-sintomade(sudoracion, malaria).
-sintomade(dolorcabeza, malaria).
+sintomade(dolordecabeza, malaria).
+
 sintomade(ictericia, hepatitis).
 sintomade(dolorabdominal, hepatitis).
-sintomade(perdidaapetito, hepatitis).
+sintomade(cansancio, hepatitis).
+
 sintomade(cansancio, tuberculosis).
 sintomade(tos, tuberculosis).
-sintomade(perdidadepeso, tuberculosis).
-sintomade(palidextez, anemia).
-sintomade(fatiga, anemia).
-sintomade(dificultadrespirar, anemia).
+sintomade(dolordetorax, tuberculosis).
 
-% Medicinas dependiendo de la enfermedad
-medicinade(contrex, gripe).
+sintomade(cansancio, anemia).
+sintomade(apetitolimitado, anemia).
+sintomade(palidez, anemia).
+
+% Medicinas segun enfermedad
 medicinade(jarabe, gripe).
-medicinade(paracetamol, rubeola).
+medicinade(contrex, gripe).
+medicinade(vitamina, rubeola).
 medicinade(vacuna, malaria).
-medicinade(pastillas, tuberculosis).
+medicinade(pastilla, tuberculosis).
 medicinade(suplementos, anemia).
 
-% Especialistas según la enfermedad
+% Especialistas segun enfermedad
 especialistade(otorrino, gripe).
-especialistade(medicinageneral, rubeola).
-especialistade(medicinageneral, malaria).
+especialistade(medicogeneral, rubeola).
+especialistade(medicogeneral, malaria).
 especialistade(endocrinologo, hepatitis).
 especialistade(neumologo, tuberculosis).
 especialistade(nutricionista, anemia).
 
-% Reglas
-% 1. Determinar si un especialista atiende una enfermedad
-atiende_especialista(E, S):- sintomade(S, Z), especialistade(E, Z).
+% 1. Determinar los medicos para una enfermedad
+atiende_medico(Medico, Enfermedad) :- especialistade(Medico, Enfermedad).
 
-% 2. Determinar qué medicina se receta según el síntoma
-recetade(M, S):- sintomade(S, Z), medicinade(M, Z).
+% 2. Medicinas para un síntoma
+medicina_para_sintoma(Medicina, Sintoma) :- sintomade(Sintoma, Enfermedad), medicinade(Medicina, Enfermedad).
 
-% 3. Determinar el especialista y medicina para una enfermedad
-mereceta(Es, M, E):- medicinade(M, E), especialistade(Es, E).
+% 3. Relación de medicos y medicinas con una enfermedad
+tratamiento_para(Enfermedad, Medico, Medicina) :-
+    especialistade(Medico, Enfermedad),
+    medicinade(Medicina, Enfermedad).
 
-% 4. Determinar probabilidad de enfermedad según síntomas
-buscar([], _, 0).
-buscar([X|Xs], E, P):- sintomade(X, E), buscar(Xs, E, P1), P is P1 + 1.
+% 4. Probabilidad de enfermedad segun sintomas dados
+contar_sintomas([], _, 0).
+contar_sintomas([Sintoma|Resto], Enfermedad, Cantidad) :-
+    sintomade(Sintoma, Enfermedad),
+    contar_sintomas(Resto, Enfermedad, CantidadParcial),
+    Cantidad is CantidadParcial + 1.
+contar_sintomas([_|Resto], Enfermedad, Cantidad) :-
+    contar_sintomas(Resto, Enfermedad, Cantidad).
 
-cantSint(E, C):- findall(X, sintomade(X, E), L), length(L, C).
+total_sintomas(Enfermedad, Total) :-
+    findall(Sintoma, sintomade(Sintoma, Enfermedad), Sintomas),
+    length(Sintomas, Total).
 
-diagnostico(Sintomas, E, Prob):- buscar(Sintomas, E, P), cantSint(E, Total), Prob is (P * 100) / Total.
+probabilidad_enfermedad(Sintomas, Enfermedad, Probabilidad) :-
+    contar_sintomas(Sintomas, Enfermedad, Cantidad),
+    total_sintomas(Enfermedad, Total),
+    Probabilidad is (Cantidad / Total) * 100.
 
-% 5. Sugerir enfermedad mas probable según los síntomas
-mejor_diagnostico(Sintomas, MejorE):- 
-    findall((Prob, E), (enfermedad(E), diagnostico(Sintomas, E, Prob)), Resultados),
-    sort(Resultados, Sorted),
-    reverse(Sorted, [(MaxProb, MejorE)|_]).
+% 5. Mejor diagnostico basado en síntomas
+mejor_diagnostico(Sintomas, MejorEnfermedad) :-
+    findall((Prob, Enfermedad), (enfermedad(Enfermedad), probabilidad_enfermedad(Sintomas, Enfermedad, Prob)), Diagnosticos),
+    sort(Diagnosticos, DiagnosticosOrdenados),
+    reverse(DiagnosticosOrdenados, [(_, MejorEnfermedad)|_]).
 
-% Posibles consultas
-% 1. ¿Qué especialista atiende la gripe?
-%    ?- especialistade(X, gripe).
-% 2. ¿Qué medicina trata la tuberculosis?
-%    ?- medicinade(X, tuberculosis).
-% 3. ¿Qué síntomas tiene la malaria?
-%    ?- sintomade(X, malaria).
-% 4. ¿Qué enfermedades causan fiebre?
-%    ?- sintomade(fiebre, X).
-% 5. ¿Cuál es la probabilidad de tener hepatitis si tengo ictericia y dolor abdominal?
-%    ?- diagnostico([ictericia, dolorabdominal], hepatitis, Prob).
-% 6. ¿Qué especialista y medicina se necesitan para la anemia?
-%    ?- mereceta(Es, M, anemia).
-% 7. ¿Qué síntomas comparte la gripe con la tuberculosis?
-%    ?- sintomade(X, gripe), sintomade(X, tuberculosis).
-% 8. ¿Qué enfermedad tiene el síntoma escalofríos?
-%    ?- sintomade(escalofrios, X).
-% 9. ¿Qué enfermedad trata el endocrinólogo?
-%    ?- especialistade(endocrinologo, X).
-% 10. ¿Qué medicinas se pueden recetar para la gripe?
-%    ?- recetade(M, tos).
-% 11. ¿Qué porcentaje de probabilidad tengo de tener malaria con fiebre y sudoración?
-%    ?- diagnostico([fiebre, sudoracion], malaria, Prob).
-% 12. ¿Qué síntomas tiene la anemia?
-%    ?- sintomade(X, anemia).
-% 13. ¿Qué especialista puede atender una persona con pérdida de peso?
-%    ?- atiende_especialista(E, perdidadepeso).
-% 14. ¿Qué enfermedad tiene pérdida de apetito como síntoma?
-%    ?- sintomade(perdidaapetito, X).
-% 15. ¿Qué medicinas se relacionan con el síntoma cansancio?
-%    ?- recetade(M, cansancio).
-% 16. ¿Cuál es la enfermedad mas probable si tengo fiebre y erupciones?
-%    ?- mejor_diagnostico([fiebre, erupciones], MejorE).
-% 17. ¿Cuántos síntomas tiene la gripe?
-%    ?- cantSint(gripe, C).
-% 18. ¿Qué enfermedades trata el medico general?
-%    ?- especialistade(medicinageneral, X).
-% 19. ¿Qué medicamento trata la malaria?
-%    ?- medicinade(X, malaria).
-% 20. ¿Qué especialista receta suplementos?
-%    ?- medicinade(suplementos, E), especialistade(X, E).
+% CONSULTAS:
+
+% CONSULTAS:
+
+% 1. Que medico atiende la gripe?
+% ?- atiende_medico(Medico, gripe).
+
+% 2. Que medico atiende la malaria?
+% ?- atiende_medico(Medico, malaria).
+
+% 3. Que medico atiende la tuberculosis?
+% ?- atiende_medico(Medico, tuberculosis).
+
+% 4. Que medicina se recomienda para la anemia?
+% ?- medicinade(Medicina, anemia).
+
+% 5. Que medicina se usa para tratar la hepatitis?
+% ?- medicinade(Medicina, hepatitis).
+
+% 6. Que sintomas estan asociados con la rubeola?
+% ?- sintomade(Sintoma, rubeola).
+
+% 7. Que sintomas estan asociados con la tuberculosis?
+% ?- sintomade(Sintoma, tuberculosis).
+
+% 8. Que medicina es efectiva para tratar la fiebre?
+% ?- medicina_para_sintoma(Medicina, fiebre).
+
+% 9. Que medicina es efectiva para tratar el cansancio?
+% ?- medicina_para_sintoma(Medicina, cansancio).
+
+% 10. Que medico y medicina se recomiendan para tratar la malaria?
+% ?- tratamiento_para(malaria, Medico, Medicina).
+
+% 11. Que medico y medicina se recomiendan para tratar la anemia?
+% ?- tratamiento_para(anemia, Medico, Medicina).
+
+% 12. Que probabilidad hay de tener hepatitis si se presentan ictericia y cansancio?
+% ?- probabilidad_enfermedad([ictericia, cansancio], hepatitis, Probabilidad).
+
+% 13. Que probabilidad hay de tener malaria si se presentan fiebre y escalofrios?
+% ?- probabilidad_enfermedad([fiebre, escalofrios], malaria, Probabilidad).
+
+% 14. Cual es la enfermedad mas probable si se presentan los sintomas fiebre y cansancio?
+% ?- mejor_diagnostico([fiebre, cansancio], MejorEnfermedad).
+
+% 15. Que medico atiende una enfermedad especifica ingresada por el usuario?
+% ?- atiende_medico(Medico, Enfermedad).
+
+% 16. Que medicina es efectiva para un sintoma especifico ingresado por el usuario?
+% ?- medicina_para_sintoma(Medicina, Sintoma).
+
+% 17. Que tratamiento completo (medico y medicina) se recomienda para una enfermedad ingresada?
+% ?- tratamiento_para(Enfermedad, Medico, Medicina).
+
+% 18. Cuales son los sintomas asociados con una enfermedad especifica?
+% ?- sintomade(Sintoma, Enfermedad).
+
+% 19. Cuales son todas las enfermedades tratadas por un medico especifico?
+% ?- especialistade(medicogeneral, Enfermedad).
+
+% 20. Que medicinas estan relacionadas con enfermedades que incluyen el sintoma 'tos'?
+% ?- sintomade(tos, Enfermedad), medicinade(Medicina, Enfermedad).
